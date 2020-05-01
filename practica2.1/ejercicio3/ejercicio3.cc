@@ -52,6 +52,7 @@ int main(int argc, char **argv)
         std::cerr << "recvfrom: " << std::endl;
         return -1;
     }
+    recv_buffer[bytes] = '\0'; 
 
     printf("%s\n", recv_buffer);
     freeaddrinfo(result);

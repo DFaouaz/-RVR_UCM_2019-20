@@ -51,18 +51,22 @@ int main(int argc, char **argv)
     // Size = 3 para la primera letra y el \0
     int size = 2;
     char buffer[size];
+    memset(&buffer, '\0', sizeof(char) * size); // Inicializamos el buffer
     // Espera a que el la letra del buffer sea 'q' para salir
     while (buffer[0] != 'q')
     {
         // Apartado de recepcion de mensaje
         char host[NI_MAXHOST];
         char service[NI_MAXSERV];
+        memset(&host, '\0', sizeof(char) * NI_MAXHOST);
+        memset(&service, '\0', sizeof(char) * NI_MAXSERV);
 
         struct sockaddr client_addr;
         socklen_t client_len = sizeof(struct sockaddr);
-
+        
         // Limpiamos el buffer
         memset(&buffer, '\0', sizeof(char) * size);
+
         ssize_t bytes = recvfrom(sd, buffer, (size - 1) * sizeof(char), 0, &client_addr, &client_len);
 
         if (bytes == -1)
@@ -70,6 +74,7 @@ int main(int argc, char **argv)
             std::cerr << "recvfrom: " << std::endl;
             return -1;
         }
+        buffer[bytes] = '\0'; 
 
         getnameinfo(&client_addr, client_len, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         printf("%d bytes from %s:%s\n", (int)bytes, host, service);
