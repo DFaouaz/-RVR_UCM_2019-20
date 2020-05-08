@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <thread>
@@ -22,16 +23,11 @@ class MessageManager
 public:
     MessageManager(int socket_descriptor) : socket_descriptor(socket_descriptor), terminated(false)
     {
-        thread = std::thread(&MessageManager::manage, std::ref(*this));
-        std::cout << "Thread creado | ID: " << thread.get_id() << "\n";
     }
 
     ~MessageManager()
     {
         terminated = true;
-        std::thread::id id = thread.get_id();
-        thread.join();
-        std::cout << "Thread cerrado | ID: " << id << "\n";
     }
 
     void manage()
@@ -67,7 +63,7 @@ public:
 
             getnameinfo(&client_addr, client_len, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
             printf("%d bytes from %s:%s | THREAD ID: ", (int)bytes, host, service);
-            std::cout << thread.get_id() << "\n";
+            std::cout << std::this_thread::get_id() << "\n";
 
             // Apartado de respuesta
             time_t t = time(NULL);
@@ -100,8 +96,9 @@ public:
 
 private:
     int socket_descriptor;
+
+public:
     bool terminated;
-    std::thread thread;
 };
 
 int main(int argc, char **argv)
@@ -142,12 +139,16 @@ int main(int argc, char **argv)
     freeaddrinfo(result);
 
     // POOL DE THREADS
+    std::vector<std::thread> threads;
     std::vector<MessageManager *> managers;
 
     printf("CREANDO THREADS\n");
     for (int i = 0; i < NUM_THREADS; i++)
     {
-        managers.push_back(new MessageManager(sd));
+        std::shared_ptr<MessageManager> manager(new MessageManager(sd));
+        threads.push_back(std::thread(&MessageManager::manage, manager));
+        managers.push_back(manager.get());
+        std::cout << "Thread creado | ID: " << threads[i].get_id() << "\n";
     }
     printf("THREADS CREADOS\n");
 
@@ -160,7 +161,10 @@ int main(int argc, char **argv)
     printf("CERRANDO THREADS\n");
     for (int i = 0; i < NUM_THREADS; i++)
     {
-        delete managers[i];
+        std::thread::id id = threads[i].get_id();
+        managers[i]->terminated = true;
+        threads[i].join();
+        std::cout << "Thread cerrado | ID: " << id << "\n";
     }
     printf("THREADS CERRADOS\n");
 
