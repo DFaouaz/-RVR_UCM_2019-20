@@ -21,21 +21,28 @@ public:
 
     void to_bin()
     {
-        // Calcular espacio
-        int32_t data_size = 80 + sizeof(int16_t) * 2;
+        try
+        {
+            // Calcular espacio
+            int32_t data_size = 80 + sizeof(int16_t) * 2;
 
-        // Reservar memoria
-        alloc_data(data_size);
+            // Reservar memoria
+            alloc_data(data_size);
 
-        // Nombre
-        strcpy(_data, name);
+            // Nombre
+            memcpy(_data, name, 80);
 
-        // Posicion (x, y)
-        char *pos = _data + 80;
-        strncpy(pos, (char *)&x, sizeof(int16_t));
+            // Posicion (x, y)
+            char *pos = _data + 80;
+            memcpy(pos, (void *)&x, sizeof(int16_t));
 
-        pos = pos + sizeof(int16_t);
-        strncpy(pos, (char *)&y, sizeof(int16_t));
+            pos = pos + sizeof(int16_t);
+            memcpy(pos, (void *)&y, sizeof(int16_t));
+        }
+        catch (std::exception exception)
+        {
+            printf("ERROR to_bin");
+        }
     }
 
     int from_bin(char *data)
@@ -48,15 +55,18 @@ public:
             // Reservar memoria
             alloc_data(data_size);
 
+            // Copiamos data
+            memcpy(_data, data, data_size);
+
             // Nombre
-            strncpy(name, data, 80);
+            memcpy(name, data, 80);
 
             // Posicion (x, y)
             char *pos = data + 80;
-            strncpy((char *)&x, pos, sizeof(int16_t));
+            memcpy((void *)&x, pos, sizeof(int16_t));
 
             pos = pos + sizeof(int16_t);
-            strncpy((char *)&y, pos, sizeof(int16_t));
+            memcpy((void *)&y, pos, sizeof(int16_t));
 
             return 0;
         }
@@ -84,20 +94,50 @@ int main(int argc, char **argv)
 
     // Open
     int fd = open("data", O_CREAT | O_WRONLY);
+    if (fd == -1)
+    {
+        printf("Error al abrir archivo\n");
+        return -1;
+    }
     // Write de data
-    write(fd, one_w.data(), one_w.size());
+    ssize_t bytes = write(fd, one_w.data(), one_w.size());
+    if (bytes == -1)
+    {
+        printf("Error al escribir en archivo\n");
+        return -1;
+    }
     // Cerrar
-    close(fd);
+    int error = close(fd);
+    if (error == -1)
+    {
+        printf("Error al cerrar descriptor de archivo\n");
+        return -1;
+    }
 
     // Leer el fichero en un buffer y "deserializar" en one_r
     // Open
     fd = open("data", O_RDONLY);
+    if (fd == -1)
+    {
+        printf("Error al abrir archivo\n");
+        return -1;
+    }
     // Read de data
     char buffer[121];
     memset(buffer, '\0', 121);
-    read(fd, buffer, 120);
+    bytes = read(fd, buffer, 120);
+    if (bytes == -1)
+    {
+        printf("Error al escribir en archivo\n");
+        return -1;
+    }
     // Cerrar
     close(fd);
+    if (error == -1)
+    {
+        printf("Error al cerrar descriptor de archivo\n");
+        return -1;
+    }
     // Desserializar
     one_r.from_bin(buffer);
 
