@@ -69,49 +69,68 @@ void ChatServer::do_messages()
         // - MESSAGE: Reenviar el mensaje a todos los clientes (menos el emisor)
 
         ChatMessage *obj = new ChatMessage();
-        Socket *client = nullptr;
+        Socket *client = &socket;
         socket.recv(*obj, client);
 
         // LOGIN
         if (obj->type == ChatMessage::LOGIN)
         {
-            /*if (std::find(clients.begin(), clients.end(), client) != clients.end())
+            for (Socket *c : clients)
             {
-                printf("Esto no deberia de pasar\n");
-                continue;
-            }*/
-            /*for (auto *c : clients)
-            {
-                if (c == client)
+                if (*c == *client)
                 {
-                    printf("Esto no deberia de ocurrir\n");
-
+                    std::cout << "LOGING ERROR: " << *client << "\n";
+                    delete client;
+                    client == nullptr;
                 }
-            }*/
+            }
+
+            if (client == nullptr)
+                continue;
 
             clients.push_back(client);
-            printf("Alguien se ha logeado\n");
+            std::cout << "CLIENT LOGED: " << *client << "\n";
         }
         // LOGOUT
         else if (obj->type == ChatMessage::LOGOUT)
         {
-            auto client_it = std::find(clients.begin(), clients.end(), client);
-            if (client_it == clients.end())
+            Socket *aux = nullptr;
+            int i = 0;
+            while (aux == nullptr && i < clients.size())
+            {
+                if (*clients[i] == *client)
+                    aux = clients[i];
+                i++;
+            }
+            // No encontrado en clientes
+            if (aux == nullptr)
+            {
+                delete client;
                 continue;
-            clients.erase(client_it);
-            printf("Alguien se ha deslogeado\n");
+            }
+            else
+            {
+                socket.send(*obj, *aux);
+                auto it = std::find(clients.begin(), clients.end(), aux);
+                clients.erase(it);
+
+                std::cout << "CLIENT LOGED OUT: " << *aux << "\n";
+
+                delete aux;
+                delete client;
+            }
         }
         // MESSAGE
         else if (obj->type == ChatMessage::MESSAGE)
         {
-            for (auto c : clients)
+            for (auto *c : clients)
             {
-                if (c != client)
-                {
-                    socket.send(*obj, *c);
-                }
+                if (*c == *client)
+                    continue;
+                socket.send(*obj, *c);
             }
-            printf("Mensajes enviados\n");
+            delete client;
+            printf("Enviando \"%s\" a todos los usuarios menos al remitente\n", obj->message.c_str());
         }
     }
 }
@@ -145,6 +164,9 @@ void ChatClient::input_thread()
         if (!std::getline(std::cin, msg))
             break;
 
+        if (!strcmp(msg.c_str(), "logout"))
+            break;
+
         // Enviar al servidor usando socket
         ChatMessage em(nick, msg);
         em.type = ChatMessage::MESSAGE;
@@ -160,7 +182,12 @@ void ChatClient::net_thread()
         // Recibir Mensajes de red
         std::string msg;
         ChatMessage em;
-        socket.recv(em);
+                
+        if (socket.recv(em) < 0)
+            break;
+        if (em.type == ChatMessage::LOGOUT)
+            break;
+
         // Mostrar en pantalla el mensaje de la forma "nick: mensaje"
         printf("%s: %s\n", em.nick.c_str(), em.message.c_str());
     }

@@ -27,6 +27,9 @@ int main(int argc, char **argv)
     ec.login();
 
     ec.input_thread();
-    
+
+    ec.logout();
+
+    return 0;
 }
 
