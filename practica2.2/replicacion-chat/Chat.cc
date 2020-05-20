@@ -79,7 +79,7 @@ void ChatServer::do_messages()
             {
                 if (*c == *client)
                 {
-                    std::cout << "LOGING ERROR: " << *client << "\n";
+                    std::cout << "LOGGING ERROR: " << *client << "\n";
                     delete client;
                     client == nullptr;
                 }
@@ -89,7 +89,7 @@ void ChatServer::do_messages()
                 continue;
 
             clients.push_back(client);
-            std::cout << "CLIENT LOGED: " << *client << "\n";
+            std::cout << "CLIENT LOGGED: " << *client << "\n";
         }
         // LOGOUT
         else if (obj->type == ChatMessage::LOGOUT)
@@ -114,7 +114,7 @@ void ChatServer::do_messages()
                 auto it = std::find(clients.begin(), clients.end(), aux);
                 clients.erase(it);
 
-                std::cout << "CLIENT LOGED OUT: " << *aux << "\n";
+                std::cout << "CLIENT LOGGED OUT: " << *aux << "\n";
 
                 delete aux;
                 delete client;
