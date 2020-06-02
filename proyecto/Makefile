@@ -1,23 +1,23 @@
-CC=g++
-CFLAGS=-g -I.
-DEPS = Server.h Client.h
-OBJ = Server.o Client.o
-LIBS=-lpthread
+CC = g++
+CFLAGS = -g -I.
+DEPS = Server.h Client.h Message.h Socket.h
+OBJ = Server.o Client.o Message.o Socket.o
+LIBS = -lpthread -lSDL2
 
 %.o: %.cc $(DEPS)
 	$(CC) -g -c -o $@ $< $(CFLAGS)
 
-all: cs cc
+all: ServerProgram ClientProgram
 
-cs: $(OBJ) ServerProgram.o
+ServerProgram: $(OBJ) ServerProgram.o
 	g++ -o $@ $^ $(CFLAGS) $(LIBS)
 
-cc: $(OBJ) ClientProgram.o
+ClientProgram: $(OBJ) ClientProgram.o
 	g++ -o $@ $^ $(CFLAGS) $(LIBS)
 
 
 .PHONY: clean
 
 clean:
-	rm -f *.o cs cc
+	rm -f *.o ServerProgram ClientProgram
 
