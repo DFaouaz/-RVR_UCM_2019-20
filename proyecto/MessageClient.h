@@ -5,10 +5,10 @@
 #include <algorithm>
 
 #include "Serializable.h"
-#include "Socket.h"
 
 struct PlayerState
 {
+    PlayerState() : xDirection(0), yDirection(0), xAim(0.0f), yAim(0.0f), shooting(false) {}
     int xDirection;
     int yDirection;
 
@@ -16,9 +16,18 @@ struct PlayerState
     float yAim;
 
     bool shooting;
+
+    bool operator==(const PlayerState& other) const
+    {
+        return  xDirection == other.xDirection &&
+                yDirection == other.yDirection &&
+                xAim == other.xAim &&
+                yAim == other.yAim &&
+                shooting == other.shooting;
+    }
 };
 
-class Message: public Serializable
+class MessageClient: public Serializable
 {
 public:
     static const size_t NICK_SIZE = 16; // El ultimo debe set \0
@@ -31,8 +40,9 @@ public:
         LOGOUT  = 2
     };
 
-    Message();
-    Message(const std::string& nick, const PlayerState& playerState);
+    MessageClient();
+    MessageClient(const std::string& nick, const PlayerState& playerState);
+    virtual ~MessageClient();
 
     void to_bin();
 

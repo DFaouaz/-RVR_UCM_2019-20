@@ -4,7 +4,7 @@
 int main(int argc, char *argv[])
 {
     // Check arguments
-    if(argc != 3) {
+    if(argc < 3) {
         printf("Formato debe de ser: ./program host port\n");
         return 0;
     }

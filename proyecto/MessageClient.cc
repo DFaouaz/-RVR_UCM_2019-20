@@ -1,14 +1,19 @@
-#include "Message.h"
+#include "MessageClient.h"
 
-Message::Message()
+MessageClient::MessageClient()
 {
 }
 
-Message::Message(const std::string &nick, const PlayerState &playerState) : nick(nick), playerState(playerState)
+MessageClient::MessageClient(const std::string &nick, const PlayerState &playerState) : nick(nick), playerState(playerState)
 {
 }
 
-void Message::to_bin()
+MessageClient::~MessageClient()
+{
+    
+}
+
+void MessageClient::to_bin()
 {
     alloc_data(sizeof(MessageType) + NICK_SIZE);
 
@@ -23,10 +28,12 @@ void Message::to_bin()
     nick[NICK_SIZE - 1] = '\0';
     memcpy(pos, nick.c_str(), NICK_SIZE);
 
-    //PlayerState TODO
+    //PlayerState
+    pos += NICK_SIZE;
+    memcpy(pos, &playerState, sizeof(PlayerState));
 }
 
-int Message::from_bin(char *data)
+int MessageClient::from_bin(char *data)
 {
     try
     {
@@ -45,7 +52,9 @@ int Message::from_bin(char *data)
         name[NICK_SIZE - 1] = '\0';
         nick = name;
 
-        //PlayerState TODO
+        //PlayerState
+        pos += NICK_SIZE;
+        memcpy(&playerState, pos, sizeof(PlayerState));
 
         return 0;
     }

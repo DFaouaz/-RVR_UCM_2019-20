@@ -4,7 +4,10 @@
 
 #include <string>
 #include <SDL2/SDL.h>
+#include <thread>
 
+#include "MessageClient.h"
+#include "MessageServer.h"
 #include "Socket.h"
 
 const unsigned int SCREEN_WIDTH = 640;
@@ -21,19 +24,23 @@ public:
     void close();
 
 private:
+    void recieveMessage();
 
     void login();
     void logout();
     
-    void processEvents() const;
-    void processEvent(const SDL_Event& event) const;
+    bool processEvents();
 
 private:
     // Atributos o propiedades
     SDL_Window* window;
 
+    std::thread recieveThread;
     Socket socket;
     std::string nick;
+    PlayerState playerState;
+
+    bool terminated;
 };
 
 #endif

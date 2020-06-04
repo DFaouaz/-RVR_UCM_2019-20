@@ -61,10 +61,6 @@ int Socket::send(Serializable &obj, const Socket &sock)
     obj.to_bin();
 
     const sockaddr_in *sock_info = (const sockaddr_in *)&sock.sa;
-    int sd = sock.sd;
-    
-    if (sock.sd <= 0)
-        sd = socket(sock_info->sin_family, SOCK_DGRAM, 0);
 
     // Enviar el objeto binario a sock usando el socket sd
     ssize_t bytes = ::sendto(sd, obj.data(), obj.size(), 0, &sock.sa, sock.sa_len);
