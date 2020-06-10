@@ -1,10 +1,9 @@
 #include "Server.h"
+#include "MessageServer.h"
+#include "MessageClient.h"
 
 Server::Server(const char *host, const char *port) : socket(host, port), terminated(false)
 {
-    worldState.nPlayers = 0;
-    for (int i = 0; i < 4; i++)
-        worldState.pPositions[i] = {0, 0};
 }
 
 Server::~Server()
@@ -18,33 +17,40 @@ void Server::init()
     // Socket bind
     socket.bind();
 
-    // Hilo para recibir nuevas conexiones
-    messagesThread = std::thread (&Server::manageMessages, std::ref(*this));
+    // Init window (solo para probar logica, esto iria en Client)
+    window = new sf::RenderWindow(sf::VideoMode(600, 480, 16), "SHUBE");
+
+    // Init world
+    world = new World(window);
+
+    // Net thread
+    netThread = std::thread(&Server::manageMessages, std::ref(*this));
 }
 
 void Server::run()
 {
+    sf::Clock timer;
+    float deltaTime = 0;
     while (true)
     {
-        std::lock_guard<std::mutex> lock(clientsMutex);
-        for (int i = 0; i < clients.size(); i++)
-        {
-            MessageServer message;
-            message.type = MessageServer::MESSAGE;
-            message.worldState = worldState;
+        // Procesar partida
+        worldMutex.lock();
+        world->render();
+        world->update(deltaTime);
+        worldMutex.unlock();
 
-            socket.send(message, *clients[i]);
-        }
+        sendWorld();
+
+        deltaTime = timer.getElapsedTime().asSeconds();
+        timer.restart();
     }
-
-    // Procesar partida
 }
 
 void Server::close()
 {
     terminated = true;
-    messagesThread.detach();
-
+    netThread.join();
+    delete window;
 }
 
 // Private methods
@@ -63,7 +69,6 @@ void Server::manageMessages()
             return; //continue;
         }
 
-        std::lock_guard<std::mutex> lock(clientsMutex);
         switch (message.type)
         {
         case MessageClient::LOGIN:
@@ -83,6 +88,7 @@ void Server::manageMessages()
 
 void Server::processLogin(Socket *client, const MessageClient &message)
 {
+    std::lock_guard<std::mutex> lock(clientMutex);
     // Comprobar si ya esta logeado
     for (auto c : clients)
     {
@@ -101,18 +107,13 @@ void Server::processLogin(Socket *client, const MessageClient &message)
     clients.push_back(client);
     std::cout << "CLIENT LOGGED: " << *client << "\n";
 
-    int nPlayer = ++worldState.nPlayers;
-    worldState.pPositions[nPlayer - 1] = {50.0f * nPlayer, 50.0f * nPlayer};
-
-    // Le manda el estado del juego
+    //ECHO
     MessageServer messageServer;
     messageServer.type = MessageServer::LOGIN;
-    messageServer.worldState = worldState;
-
+    messageServer.index = players.size();
     socket.send(messageServer, *client);
 
-    //Crea el playerState
-    playerStates.push_back(message.playerState);
+    addPlayer(players.size());
 
     // Crear otro hilo
     // TODO
@@ -120,17 +121,22 @@ void Server::processLogin(Socket *client, const MessageClient &message)
 
 void Server::processMessage(Socket *client, const MessageClient &message)
 {
+    std::lock_guard<std::mutex> lock(clientMutex);
     // Comprobar que existe el client en el pool
     int index = clientExists(client);
-    if(index < 0) return;
+    if (index < 0)
+        return;
 
     // Si es asi, modifica la info del cliente
-    if(index < playerStates.size())
-        playerStates[index] = message.playerState;
+    /*if (message.playerState.index < players.size())
+        players[message.playerState.index];*/
+
+    players[index]->processState(message.playerState);
 }
 
 void Server::processLogout(Socket *client, const MessageClient &message)
 {
+    std::lock_guard<std::mutex> lock(clientMutex);
     int index = clientExists(client);
     // No encontrado en clientes
     if (index < 0)
@@ -143,20 +149,21 @@ void Server::processLogout(Socket *client, const MessageClient &message)
     // Mensaje para que el cliente sepa que se ha podido desconectar
     MessageServer messageServer;
     messageServer.type = MessageServer::LOGOUT;
-    messageServer.worldState = worldState;
     socket.send(messageServer, *client);
-    auto it = std::find(clients.begin(), clients.end(), clients[index]);
 
+    auto it = std::find(clients.begin(), clients.end(), clients[index]);
     delete clients[index];
     delete client;
     clients.erase(it);
 
     //Eliminar playerState
-    auto pIt = std::find(playerStates.begin(), playerStates.end(), playerStates[index]);
-    playerStates.erase(pIt);
+    //TODO
+
+    //Remove player
+    removePlayer(index);
 }
 
-int Server::clientExists(Socket* client) const
+int Server::clientExists(Socket *client)
 {
     int i = 0;
     while (i < clients.size())
@@ -166,4 +173,36 @@ int Server::clientExists(Socket* client) const
         i++;
     }
     return i < clients.size() ? i : -1;
+}
+
+void Server::addPlayer(int index)
+{
+    std::lock_guard<std::mutex> lock(worldMutex);
+    Player *player = new Player(index);
+    world->addGameObject(player);
+
+    players.push_back(player);
+}
+
+void Server::removePlayer(int index)
+{
+    std::lock_guard<std::mutex> lock(worldMutex);
+    Player *player = players[index];
+    world->removeGameObject(player);
+
+    players.erase(players.begin() + index);
+}
+
+void Server::sendWorld()
+{
+    std::lock_guard<std::mutex> lock(clientMutex);
+    // Estado del mundo
+    MessageServer messageServer;
+    messageServer.type = MessageServer::MESSAGE;
+    messageServer.world.copy(*world);
+    for (int i = 0; i < clients.size(); i++)
+    {
+        messageServer.index = i;
+        socket.send(messageServer, *clients[i]);
+    }
 }

@@ -1,6 +1,7 @@
 #include "Client.h"
+#include <X11/Xlib.h>
 
-Client::Client(const std::string &nick, const char *host, const char *port) : window(nullptr), nick(nick), socket(host, port), terminated(false)
+Client::Client(const std::string &nick, const char *host, const char *port) : window(nullptr), nick(nick), socket(host, port), terminated(false), world(nullptr)
 {
 }
 
@@ -12,82 +13,52 @@ Client::~Client()
 
 void Client::init()
 {
-    // SDL Init
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0)
-    {
-        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
-        return;
-    }
+    XInitThreads();
+    window = new sf::RenderWindow(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, 16), "SHUBE");
+    window->setActive(false);
+    world = new World(window);
 
-    //Create window
-    window = SDL_CreateWindow("Shube", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    if (window == nullptr)
-    {
-        printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
-    }
+    netThread = new sf::Thread(&Client::recieveMessage, this);
+    netThread->launch();
 
-    recieveThread = std::thread(&Client::recieveMessage, std::ref(*this));
-
-    // Envia señal de login
+    // Login
     login();
 }
 
 void Client::run()
 {
-    while (true)
+    while (window->isOpen())
     {
-        // Recibir mensaje TODO: hacer un hilo para esto
-        //recieveMessage();
-        // Renderizar
-
-        // Porcesar eventos
-        playerState = PlayerState();
-        if(!processEvents()) break;
-
-        // Enviar mensaje del estado
-        /*MessageClient message;
-        message.type = MessageClient::MESSAGE;
-        message.playerState = playerState;
-        socket.send(message, socket);*/
+        if (!processEvents())
+            break;
     }
 }
 
 void Client::close()
 {
-    terminated = true;
-
-    // Enviar logout
+    // Logout
     logout();
-    recieveThread.join();
 
-    // Destroy window
-    SDL_DestroyWindow(window);
+    terminated = true;
+    netThread->terminate();
 
-    // Quit SDL subsystems
-    SDL_Quit();
-
+    delete window;
+    delete netThread;
 }
 
 void Client::recieveMessage()
 {
     while (!terminated)
     {
-
         MessageServer message;
         socket.recv(message);
 
-        if(message.type == MessageServer::LOGOUT)
-        {
-            printf("LOGOUT\n");
-            break;
+        if(message.type == MessageServer::LOGIN){
+            playerState.index = message.index;
         }
 
-        // Imprimimos el world State
-        printf("NPlayers : %d\n", message.worldState.nPlayers);
-        for (int i = 0; i < 4; i++)
-        {
-            printf("x: %f | y: %f\n", message.worldState.pPositions[i].x, message.worldState.pPositions[i].y);
-        }
+        world->copy(message.world);
+        world->render();
     }
 }
 
@@ -113,28 +84,24 @@ void Client::logout()
 
 bool Client::processEvents()
 {
-    SDL_Event event;
-    while (SDL_PollEvent(&event))
+    sf::Event event;
+    bool processed = false;
+    while (window->pollEvent(event))
     {
-        if (event.type == SDL_QUIT)
+        if (event.type == sf::Event::Closed)
             return false;
-
-        /*if (event.type == SDL_KEYDOWN)
-        {
-            if(event.key.keysym.sym == SDLK_w){
-                playerState.yDirection = 1;
-            }
-            else if(event.key.keysym.sym == SDLK_s){
-                playerState.yDirection = -1;
-            }
-            else if(event.key.keysym.sym == SDLK_a){
-
-                playerState.xDirection = -1;
-            }
-            else if(event.key.keysym.sym == SDLK_d){
-                playerState.xDirection = 1;
-            }
-        }*/
+        processed = playerState.handleEvent(event) || processed;
     }
+
+    if(processed)
+    {
+        MessageClient messageClient;
+        messageClient.type = MessageClient::MESSAGE;
+        messageClient.nick = nick;
+        messageClient.playerState = playerState;
+
+        socket.send(messageClient, socket);
+    }
+
     return true;
 }

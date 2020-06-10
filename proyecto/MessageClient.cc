@@ -10,14 +10,13 @@ MessageClient::MessageClient(const std::string &nick, const PlayerState &playerS
 
 MessageClient::~MessageClient()
 {
-    
 }
 
 void MessageClient::to_bin()
 {
-    alloc_data(sizeof(MessageType) + NICK_SIZE);
+    alloc_data(sizeof(MessageType) + NICK_SIZE + sizeof(PlayerState));
 
-    memset(_data, 0, sizeof(MessageType) + NICK_SIZE);
+    memset(_data, 0, sizeof(MessageType) + NICK_SIZE + sizeof(PlayerState));
 
     // Serializar los campos type, nick y message en el buffer _data
     // Type
@@ -28,18 +27,38 @@ void MessageClient::to_bin()
     nick[NICK_SIZE - 1] = '\0';
     memcpy(pos, nick.c_str(), NICK_SIZE);
 
-    //PlayerState
+    //PlayerState Index
     pos += NICK_SIZE;
-    memcpy(pos, &playerState, sizeof(PlayerState));
+    memcpy(pos, &playerState.index, sizeof(playerState.index));
+
+    //PlayerState xDirection
+    pos += sizeof(playerState.index);
+    memcpy(pos, &playerState.xDirection, sizeof(playerState.xDirection));
+
+    //PlayerState yDirection
+    pos += sizeof(playerState.xDirection);
+    memcpy(pos, &playerState.yDirection, sizeof(playerState.yDirection));
+
+    //PlayerState xAim
+    pos += sizeof(playerState.yDirection);
+    memcpy(pos, &playerState.xAim, sizeof(playerState.xAim));
+
+    //PlayerState yAim
+    pos += sizeof(playerState.xAim);
+    memcpy(pos, &playerState.yAim, sizeof(playerState.yAim));
+
+    //PlayerState Shooting
+    pos += sizeof(playerState.yAim);
+    memcpy(pos, &playerState.shooting, sizeof(playerState.shooting));
 }
 
 int MessageClient::from_bin(char *data)
 {
     try
     {
-        alloc_data(sizeof(MessageType) + NICK_SIZE);
+        alloc_data(sizeof(MessageType) + NICK_SIZE + sizeof(PlayerState));
 
-        memcpy(static_cast<void *>(_data), data, sizeof(MessageType) + NICK_SIZE);
+        memcpy(static_cast<void *>(_data), data, sizeof(MessageType) + NICK_SIZE + sizeof(PlayerState));
 
         //Reconstruir la clase usando el buffer _data
         // Type
@@ -52,9 +71,29 @@ int MessageClient::from_bin(char *data)
         name[NICK_SIZE - 1] = '\0';
         nick = name;
 
-        //PlayerState
+        //PlayerState Index
         pos += NICK_SIZE;
-        memcpy(&playerState, pos, sizeof(PlayerState));
+        memcpy(&playerState.index, pos, sizeof(playerState.index));
+
+        //PlayerState xDirection
+        pos += sizeof(playerState.index);
+        memcpy(&playerState.xDirection, pos, sizeof(playerState.xDirection));
+
+        //PlayerState yDirection
+        pos += sizeof(playerState.xDirection);
+        memcpy(&playerState.yDirection, pos, sizeof(playerState.yDirection));
+
+        //PlayerState xAim
+        pos += sizeof(playerState.yDirection);
+        memcpy(&playerState.xAim, pos, sizeof(playerState.xAim));
+
+        //PlayerState yAim
+        pos += sizeof(playerState.xAim);
+        memcpy(&playerState.yAim, pos, sizeof(playerState.yAim));
+
+        //PlayerState Shooting
+        pos += sizeof(playerState.yAim);
+        memcpy(&playerState.shooting, pos, sizeof(playerState.shooting));
 
         return 0;
     }

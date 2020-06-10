@@ -5,24 +5,12 @@
 #include <algorithm>
 
 #include "Serializable.h"
+#include "World.h"
 
-struct Position {
-    float x;
-    float y;
-};
-
-struct WorldState
-{
-    // Players
-    int nPlayers;
-    Position pPositions[4];
-};
 
 class MessageServer: public Serializable
 {
 public:
-    static const size_t MESSAGE_SIZE = sizeof(WorldState);
-
     enum MessageType
     {
         LOGIN   = 0,
@@ -31,7 +19,6 @@ public:
     };
 
     MessageServer();
-    MessageServer(const WorldState& worldState);
     virtual ~MessageServer();
 
     void to_bin();
@@ -39,5 +26,6 @@ public:
     int from_bin(char * data);
 
     uint8_t type;
-    WorldState worldState;
+    uint8_t index;
+    World world;
 };

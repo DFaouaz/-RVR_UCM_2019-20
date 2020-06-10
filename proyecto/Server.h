@@ -6,9 +6,15 @@
 #include <memory>
 #include <thread>
 #include <mutex>
+
+#include <SFML/Graphics.hpp>
 #include "Socket.h"
-#include "MessageClient.h"
-#include "MessageServer.h"
+
+#include "World.h"
+#include "Player.h"
+
+class MessageClient;
+class PlayerState;
 
 class Server
 {
@@ -27,21 +33,28 @@ private:
     void processMessage(Socket* client, const MessageClient& message);
     void processLogout(Socket* client, const MessageClient& message);
 
-    int clientExists(Socket* client) const;
+    int clientExists(Socket* client);
+
+    void addPlayer(int index);
+    void removePlayer(int index);
+
+    void sendWorld();
 
 private:
     // Atributos o propiedades
-    std::mutex clientsMutex;
-    std::thread messagesThread;
     Socket socket;
+    std::thread netThread;
     bool terminated;
 
     // Vector de GameObjects?
     std::vector<Socket*> clients;
 
     // Otros
-    std::vector<PlayerState> playerStates;
-    WorldState worldState;
+    sf::RenderWindow* window;
+    std::mutex worldMutex;
+    std::mutex clientMutex;
+    World* world;
+    std::vector<Player*> players;
 };
 
 #endif

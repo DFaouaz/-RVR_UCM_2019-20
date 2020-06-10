@@ -3,7 +3,7 @@
 #define CLIENT_H
 
 #include <string>
-#include <SDL2/SDL.h>
+#include <SFML/Graphics.hpp>
 #include <thread>
 
 #include "MessageClient.h"
@@ -12,6 +12,8 @@
 
 const unsigned int SCREEN_WIDTH = 640;
 const unsigned int SCREEN_HEIGHT = 480;
+
+class World;
 
 class Client
 {
@@ -23,22 +25,25 @@ public:
     void run();
     void close();
 
-private:
     void recieveMessage();
-
+private:
+    // Net stuff
     void login();
     void logout();
-    
+
+    //Logic stuff
     bool processEvents();
+    void update(float deltaTime);
 
 private:
-    // Atributos o propiedades
-    SDL_Window* window;
+    sf::RenderWindow* window;
 
-    std::thread recieveThread;
+    // Atributos o propiedades
+    sf::Thread* netThread;
     Socket socket;
     std::string nick;
     PlayerState playerState;
+    World* world;
 
     bool terminated;
 };

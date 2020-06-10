@@ -1,11 +1,8 @@
 #include "MessageServer.h"
 
-MessageServer::MessageServer()
+MessageServer::MessageServer() : world(nullptr)
 {
-}
 
-MessageServer::MessageServer(const WorldState &worldState)
-{
 }
 
 MessageServer::~MessageServer()
@@ -15,34 +12,40 @@ MessageServer::~MessageServer()
 
 void MessageServer::to_bin()
 {
-    alloc_data(sizeof(MessageType) + MESSAGE_SIZE);
+    world.to_bin();
 
-    memset(_data, 0, sizeof(MessageType) + MESSAGE_SIZE);
+    alloc_data(sizeof(type) + sizeof(index) + world.size());
+
+    memset(_data, 0, sizeof(type) + sizeof(index) + world.size());
 
     // Serializar los campos type y message en el buffer _data
     // Type
     memcpy(_data, &type, sizeof(type));
 
-    // WorldState
+    // Index
     char *pos = _data + sizeof(type);
-    memcpy(pos, &worldState, MESSAGE_SIZE);
+    memcpy(pos, &index, sizeof(index));
+
+    // World
+    pos += sizeof(index);
+    memcpy(pos, world.data(), world.size());
 }
 
 int MessageServer::from_bin(char *data)
 {
-     try
+    try
     {
-        alloc_data(sizeof(MessageType) + MESSAGE_SIZE);
-
-        memcpy(static_cast<void *>(_data), data, sizeof(MessageType) + MESSAGE_SIZE);
-
         //Reconstruir la clase usando el buffer _data
         // Type
-        memcpy(&type, _data, sizeof(type));
+        memcpy(&type, data, sizeof(type));
 
-        // WorldState
-        char *pos = _data + sizeof(type);
-        memcpy(&worldState, pos, MESSAGE_SIZE);
+        // Index
+        char *pos = data + sizeof(type);
+        memcpy(&index, pos, sizeof(index));
+
+        // World
+        pos += sizeof(index);
+        world.from_bin(pos);
 
         return 0;
     }
