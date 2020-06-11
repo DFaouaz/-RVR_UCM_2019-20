@@ -19,8 +19,7 @@ public:
 
     bool operator==(const PlayerState &other) const
     {
-        return index == other.index &&
-               xDirection == other.xDirection &&
+        return xDirection == other.xDirection &&
                yDirection == other.yDirection &&
                xAim == other.xAim &&
                yAim == other.yAim &&

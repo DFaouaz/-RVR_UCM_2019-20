@@ -1,7 +1,8 @@
 #include "World.h"
 #include "GameObject.h"
 #include <algorithm>
-#include <Player.h>
+#include "Player.h"
+#include "Bullet.h"
 
 World::World(sf::RenderWindow *window) : window(window)
 {
@@ -19,6 +20,8 @@ World::~World()
 
 void World::render()
 {
+    auto gameObjects = this->gameObjects;
+
     window->clear();
     for (GameObject *gameObject : gameObjects)
         gameObject->render(window);
@@ -27,12 +30,16 @@ void World::render()
 
 void World::update(float deltaTime)
 {
+    auto gameObjects = this->gameObjects;
+
     for (GameObject *gameObject : gameObjects)
         gameObject->update(deltaTime);
 }
 
 void World::handleEvent(sf::Event &event)
 {
+    auto gameObjects = this->gameObjects;
+
     for (GameObject *gameObject : gameObjects)
         gameObject->handleEvent(event);
 }
@@ -68,12 +75,20 @@ void World::copy(const World &world)
 
     for (auto gO : world.getGameObjects())
     {
-        if(gO->type == ObjectType::PLAYER)
+        GameObject* gameObject = nullptr;
+        if (gO->type == ObjectType::PLAYER)
         {
-            GameObject* player = new Player(-1);
-            player->xPosition = gO->xPosition;
-            player->yPosition = gO->yPosition;
-            addGameObject(player);
+            gameObject = new Player(-1);
+            gameObject->xPosition = gO->xPosition;
+            gameObject->yPosition = gO->yPosition;
+            addGameObject(gameObject);
+        }
+        else if (gO->type == ObjectType::BULLET)
+        {
+            gameObject = new Bullet();
+            gameObject->xPosition = gO->xPosition;
+            gameObject->yPosition = gO->yPosition;
+            addGameObject(gameObject);
         }
     }
 }
@@ -110,28 +125,36 @@ int World::from_bin(char *data)
         removeGameObject(gO);
     }
 
-    char* pos = data;
+    char *pos = data;
     size_t count = 0;
     memcpy(&count, pos, sizeof(size_t));
 
-    printf("%i\n", (int) count);
+    printf("%i\n", (int)count);
 
     pos += sizeof(size_t);
-    while(count > 0)
+    while (count > 0)
     {
         ObjectType auxType;
         memcpy(&auxType, pos, sizeof(auxType));
 
-        if(auxType == ObjectType::PLAYER)
+        GameObject *gameObject = nullptr;
+        if (auxType == ObjectType::PLAYER)
         {
-            GameObject* player = new Player(-1);
-            player->from_bin(pos);
-            pos += player->size();
-            addGameObject(player);
+            gameObject = new Player(-1);
+            gameObject->from_bin(pos);
+            pos += gameObject->size();
         }
+        else if (auxType == ObjectType::BULLET)
+        {
+            gameObject = new Bullet();
+            gameObject->from_bin(pos);
+            pos += gameObject->size();
+        }
+        if (gameObject != nullptr)
+            addGameObject(gameObject);
 
         count--;
     }
-    
+
     return 0;
 }

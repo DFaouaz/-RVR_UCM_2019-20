@@ -90,7 +90,7 @@ bool Client::processEvents()
     {
         if (event.type == sf::Event::Closed)
             return false;
-        processed = playerState.handleEvent(event) || processed;
+        processed = !playerState.handleEvent(event) || processed;
     }
 
     if(processed)

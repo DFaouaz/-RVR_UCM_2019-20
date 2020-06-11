@@ -179,6 +179,7 @@ void Server::addPlayer(int index)
 {
     std::lock_guard<std::mutex> lock(worldMutex);
     Player *player = new Player(index);
+    player->setWorld(world);
     world->addGameObject(player);
 
     players.push_back(player);

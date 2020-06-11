@@ -8,6 +8,7 @@
 
 enum ObjectType
 {
+    NONE,
     PLAYER,
     BULLET
 };
@@ -28,10 +29,14 @@ public:
     virtual void to_bin();
     virtual int from_bin(char *data);
 
+    void setWorld(World* world);
+    void setPosition(float x, float y);
+
 public:
     ObjectType type;
 
 protected:
+    World* world;
     float xPosition;
     float yPosition;
 };

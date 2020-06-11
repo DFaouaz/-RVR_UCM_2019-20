@@ -14,7 +14,7 @@ public:
 
     virtual void render(sf::RenderWindow *window);
     virtual void update(float deltaTime);
-    virtual void handleEvent(sf::Event &event);
+    virtual void handleEvent(sf::Event &event) {};
 
     virtual void to_bin();
     virtual int from_bin(char *data);
@@ -22,9 +22,17 @@ public:
     void processState(const PlayerState& state);
 
 private:
+    void shoot();
+
+private:
     int index;
     float xDirection;
     float yDirection;
+    bool shooting;
+    float xAim;
+    float yAim;
+
+    float timer;
 };
 
 #endif

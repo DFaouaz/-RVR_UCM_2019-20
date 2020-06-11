@@ -33,6 +33,19 @@ bool PlayerState::handleEvent(sf::Event &event)
         if (event.key.code == sf::Keyboard::S)
             yDirection = 0;
     }
+    else if (event.type == sf::Event::MouseMoved)
+    {
+        xAim = event.mouseMove.x;
+        yAim = event.mouseMove.y;
+    }
+    else if (event.type == sf::Event::MouseButtonPressed)
+    {
+        shooting = true;
+    }
+    else if (event.type == sf::Event::MouseButtonReleased)
+    {
+        shooting = false;
+    }
 
     return copy == *this;
 }
