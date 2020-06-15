@@ -1,15 +1,21 @@
 #include "Bullet.h"
 #include <cmath>
+#include "Player.h"
 
 Bullet::Bullet() : GameObject(BULLET)
 {
+    width = 5;
+    height = 5;
 }
 
-Bullet::Bullet(float speed, float xDirection, float yDirection) : GameObject(BULLET), speed(speed), xDirection(xDirection), yDirection(yDirection)
+Bullet::Bullet(int index, float speed, float xDirection, float yDirection) : GameObject(BULLET), index(index), speed(speed), xDirection(xDirection), yDirection(yDirection)
 {
     float magnitude = std::sqrt(xDirection * xDirection + yDirection * yDirection);
-    xDirection /= magnitude;
-    yDirection /= magnitude;
+    this->xDirection /= magnitude;
+    this->yDirection /= magnitude;
+    timeSpam = 5.0f;
+    width = 5;
+    height = 5;
 }
 
 Bullet::~Bullet()
@@ -18,7 +24,7 @@ Bullet::~Bullet()
 
 void Bullet::render(sf::RenderWindow *window)
 {
-    sf::RectangleShape rect({5, 5});
+    sf::RectangleShape rect({width, height});
     rect.setFillColor(sf::Color::Red);
     rect.setPosition(xPosition, yPosition);
     window->draw(rect);
@@ -28,6 +34,25 @@ void Bullet::update(float deltaTime)
 {
     xPosition += xDirection * speed * deltaTime;
     yPosition += yDirection * speed * deltaTime;
+
+    timeSpam -= deltaTime;
+    if (timeSpam <= 0)
+        world->laterRemoveGameObject(this);
+}
+
+void Bullet::onCollisionEnter(GameObject *other)
+{
+    if (other->type == ObjectType::PLAYER)
+    {
+        Player *player = (Player *)other;
+        if (player->index == index)
+            return;
+        world->laterRemoveGameObject(this);
+    }
+    if (other->type == ObjectType::OBSTACLE)
+    {
+        world->laterRemoveGameObject(this);
+    }
 }
 
 void Bullet::to_bin()

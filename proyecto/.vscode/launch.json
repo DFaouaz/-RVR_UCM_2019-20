@@ -5,7 +5,7 @@
             "name": "g++ - Compilar y depurar el archivo activo",
             "type": "cppdbg",
             "request": "launch",
-            "program": "server",
+            "program": "client",
             "args": ["localhost", "7777", "alex"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

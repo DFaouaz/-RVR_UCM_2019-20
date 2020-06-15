@@ -15,6 +15,7 @@ public:
     virtual void render(sf::RenderWindow *window);
     virtual void update(float deltaTime);
     virtual void handleEvent(sf::Event &event) {};
+    virtual void onCollisionEnter(GameObject* other);
 
     virtual void to_bin();
     virtual int from_bin(char *data);
@@ -24,8 +25,10 @@ public:
 private:
     void shoot();
 
-private:
+public:
     int index;
+
+private:
     float xDirection;
     float yDirection;
     bool shooting;

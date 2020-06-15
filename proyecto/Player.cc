@@ -4,6 +4,8 @@
 
 Player::Player(int index) : GameObject(PLAYER), index(index), xDirection(0), yDirection(0), shooting(false), xAim(0.0f), yAim(0.0f), timer(0.0f)
 {
+    width = 20;
+    height = 20;
     xPosition = (index + 1) * 100;
     yPosition = (index + 1) * 100;
 }
@@ -14,7 +16,7 @@ Player::~Player()
 
 void Player::render(sf::RenderWindow *window)
 {
-    sf::RectangleShape rect({20, 20});
+    sf::RectangleShape rect({width, height});
     rect.setFillColor(sf::Color::White);
     rect.setPosition(xPosition, yPosition);
     window->draw(rect);
@@ -38,14 +40,24 @@ void Player::update(float deltaTime)
     }
 }
 
+void Player::onCollisionEnter(GameObject *other)
+{
+    if (other->type == ObjectType::BULLET)
+    {
+        Bullet *bullet = (Bullet *)other;
+        if (bullet->index == index)
+            return;
+    }
+}
+
 void Player::shoot()
 {
     float xDir = xAim - xPosition;
     float yDir = yAim - yPosition;
 
-    Bullet *bullet = new Bullet(2, xDir, yDir);
+    Bullet *bullet = new Bullet(index, 200, xDir, yDir);
     bullet->setPosition(xPosition, yPosition);
-    
+
     world->addGameObject(bullet);
 }
 

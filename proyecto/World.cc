@@ -3,9 +3,12 @@
 #include <algorithm>
 #include "Player.h"
 #include "Bullet.h"
+#include "Obstacle.h"
 
-World::World(sf::RenderWindow *window) : window(window)
+World::World(sf::RenderWindow *window) : window(window), removeObjects()
 {
+    Obstacle* obstacle = new Obstacle(250, 130, 20, 20);
+    addGameObject(obstacle);
 }
 
 World::~World()
@@ -30,10 +33,19 @@ void World::render()
 
 void World::update(float deltaTime)
 {
+    checkCollisions();
+
     auto gameObjects = this->gameObjects;
 
     for (GameObject *gameObject : gameObjects)
         gameObject->update(deltaTime);
+
+    //Remove
+    for (GameObject *gameObject : removeObjects)
+    {
+        removeGameObject(gameObject);
+    }
+    removeObjects.clear();
 }
 
 void World::handleEvent(sf::Event &event)
@@ -47,6 +59,7 @@ void World::handleEvent(sf::Event &event)
 void World::addGameObject(GameObject *gameObject)
 {
     gameObjects.push_back(gameObject);
+    gameObject->setWorld(this);
 }
 
 void World::removeGameObject(GameObject *gameObject)
@@ -57,6 +70,14 @@ void World::removeGameObject(GameObject *gameObject)
 
     gameObjects.erase(it);
     delete gameObject;
+}
+
+void World::laterRemoveGameObject(GameObject *gameObject)
+{
+    auto it = std::find(removeObjects.begin(), removeObjects.end(), gameObject);
+    if (it != removeObjects.end())
+        return;
+    removeObjects.push_back(gameObject);
 }
 
 const std::vector<GameObject *> &World::getGameObjects() const
@@ -75,7 +96,7 @@ void World::copy(const World &world)
 
     for (auto gO : world.getGameObjects())
     {
-        GameObject* gameObject = nullptr;
+        GameObject *gameObject = nullptr;
         if (gO->type == ObjectType::PLAYER)
         {
             gameObject = new Player(-1);
@@ -88,6 +109,11 @@ void World::copy(const World &world)
             gameObject = new Bullet();
             gameObject->xPosition = gO->xPosition;
             gameObject->yPosition = gO->yPosition;
+            addGameObject(gameObject);
+        }
+        else if (gO->type == ObjectType::OBSTACLE)
+        {
+            gameObject = new Obstacle(gO->xPosition, gO->yPosition, gO->width, gO->height);
             addGameObject(gameObject);
         }
     }
@@ -150,6 +176,12 @@ int World::from_bin(char *data)
             gameObject->from_bin(pos);
             pos += gameObject->size();
         }
+        else if (auxType == ObjectType::OBSTACLE)
+        {
+            gameObject = new Obstacle();
+            gameObject->from_bin(pos);
+            pos += gameObject->size();
+        }
         if (gameObject != nullptr)
             addGameObject(gameObject);
 
@@ -157,4 +189,20 @@ int World::from_bin(char *data)
     }
 
     return 0;
+}
+
+void World::checkCollisions()
+{
+    for (GameObject *gO : gameObjects)
+    {
+        for (GameObject *gO2 : gameObjects)
+        {
+            if (gO == gO2)
+                continue;
+            if(gO->checkCollision(gO2))
+            {
+                gO->onCollisionEnter(gO2);
+            }
+        }
+    }
 }

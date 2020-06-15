@@ -40,10 +40,11 @@ void Client::close()
     logout();
 
     terminated = true;
-    netThread->terminate();
+    netThread->wait();
 
-    delete window;
+    delete world;
     delete netThread;
+    delete window;
 }
 
 void Client::recieveMessage()

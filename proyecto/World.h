@@ -21,16 +21,21 @@ public:
 
     void addGameObject(GameObject* gameObject);
     void removeGameObject(GameObject* gameObject);
+    void laterRemoveGameObject(GameObject* gameObject);
     const std::vector<GameObject*>& getGameObjects() const;
 
     void copy(const World& world);
 
     virtual void to_bin();
     virtual int from_bin(char* data);
+private:
+    void checkCollisions();
 
 private:
     sf::RenderWindow* window;
     std::vector<GameObject*> gameObjects;
+
+    std::vector<GameObject*> removeObjects;
 };
 
 #endif
