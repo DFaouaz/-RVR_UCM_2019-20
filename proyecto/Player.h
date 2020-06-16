@@ -4,6 +4,9 @@
 
 #include "GameObject.h"
 
+const unsigned int SCREEN_WIDTH = 640;
+const unsigned int SCREEN_HEIGHT = 480;
+
 class PlayerState;
 
 class Player : public GameObject
@@ -27,6 +30,7 @@ private:
 
 public:
     int index;
+    int kills;
 
 private:
     float xDirection;

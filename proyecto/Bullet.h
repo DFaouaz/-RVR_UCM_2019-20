@@ -4,11 +4,14 @@
 
 #include "GameObject.h"
 
+class Player;
+
 class Bullet : public GameObject
 {
 public:
     Bullet();
-    Bullet(int index, float speed, float xDirection, float yDirection);
+    Bullet(int index);
+    Bullet(int index, float speed, float xDirection, float yDirection, Player* shooter);
     virtual ~Bullet();
 
     virtual void render(sf::RenderWindow* window);
@@ -21,6 +24,7 @@ public:
 
 public:
     int index;
+    Player* shooter;
     
 private:
     float timeSpam;

@@ -4,6 +4,7 @@
 
 Player::Player(int index) : GameObject(PLAYER), index(index), xDirection(0), yDirection(0), shooting(false), xAim(0.0f), yAim(0.0f), timer(0.0f)
 {
+    kills = 0;
     width = 20;
     height = 20;
     xPosition = (index + 1) * 100;
@@ -17,9 +18,26 @@ Player::~Player()
 void Player::render(sf::RenderWindow *window)
 {
     sf::RectangleShape rect({width, height});
-    rect.setFillColor(sf::Color::White);
+    if (world->getIndex() == index)
+        rect.setFillColor(sf::Color::Green);
+    else
+        rect.setFillColor(sf::Color(255, 164, 32, 255));
+
     rect.setPosition(xPosition, yPosition);
     window->draw(rect);
+
+    sf::Font font;
+    if (font.loadFromFile("./assets/arial.ttf"))
+    {
+        sf::Text killCounter(std::to_string(kills), font, 20);
+        killCounter.setOrigin(0.5f, 0.5f);
+        killCounter.setFillColor(sf::Color::White);
+        killCounter.setPosition(xPosition + width / 4.0f, yPosition - height / 6.0f);
+        killCounter.setOutlineColor(sf::Color::Black);
+        killCounter.setOutlineThickness(1.0f);
+        killCounter.setStyle(sf::Text::Bold);
+        window->draw(killCounter);
+    }
 }
 
 void Player::update(float deltaTime)
@@ -27,6 +45,16 @@ void Player::update(float deltaTime)
     float speed = 200;
     xPosition += xDirection * speed * deltaTime;
     yPosition += yDirection * speed * deltaTime;
+
+    if (xPosition < 0)
+        xPosition = 0;
+    else if (xPosition + width > SCREEN_WIDTH)
+        xPosition = SCREEN_WIDTH - width;
+
+    if (yPosition < 0)
+        yPosition = 0;
+    else if (yPosition + height > SCREEN_HEIGHT)
+        yPosition = SCREEN_HEIGHT - height;
 
     //Logica del disparo
     if (shooting)
@@ -55,7 +83,7 @@ void Player::shoot()
     float xDir = xAim - xPosition;
     float yDir = yAim - yPosition;
 
-    Bullet *bullet = new Bullet(index, 200, xDir, yDir);
+    Bullet *bullet = new Bullet(index, 200, xDir, yDir, this);
     bullet->setPosition(xPosition, yPosition);
 
     world->addGameObject(bullet);
@@ -68,7 +96,7 @@ void Player::to_bin()
     char buffer[size];
     memcpy(buffer, GameObject::data(), size);
 
-    alloc_data(size + sizeof(index) + sizeof(xDirection) + sizeof(yDirection) + sizeof(shooting) + sizeof(xAim) + sizeof(yAim));
+    alloc_data(size + sizeof(index) + sizeof(kills) + sizeof(xDirection) + sizeof(yDirection) + sizeof(shooting) + sizeof(xAim) + sizeof(yAim));
 
     char *pos = _data;
     memcpy(pos, buffer, size);
@@ -77,6 +105,9 @@ void Player::to_bin()
     memcpy(pos, &index, sizeof(index));
 
     pos += sizeof(index);
+    memcpy(pos, &kills, sizeof(kills));
+
+    pos += sizeof(kills);
     memcpy(pos, &xDirection, sizeof(xDirection));
 
     pos += sizeof(xDirection);
@@ -101,6 +132,9 @@ int Player::from_bin(char *data)
     memcpy(&index, pos, sizeof(index));
 
     pos += sizeof(index);
+    memcpy(&kills, pos, sizeof(kills));
+
+    pos += sizeof(kills);
     memcpy(&xDirection, pos, sizeof(xDirection));
 
     pos += sizeof(xDirection);
@@ -115,7 +149,7 @@ int Player::from_bin(char *data)
     pos += sizeof(xAim);
     memcpy(&yAim, pos, sizeof(yAim));
 
-    _size += sizeof(index) + sizeof(xDirection) + sizeof(yDirection) + sizeof(shooting) + sizeof(xAim) + sizeof(yAim);
+    _size += sizeof(index) + sizeof(kills) + sizeof(xDirection) + sizeof(yDirection) + sizeof(shooting) + sizeof(xAim) + sizeof(yAim);
 
     return 0;
 }

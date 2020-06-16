@@ -131,7 +131,7 @@ void Server::processMessage(Socket *client, const MessageClient &message)
     /*if (message.playerState.index < players.size())
         players[message.playerState.index];*/
 
-    players[index]->processState(message.playerState);
+    players[message.playerState.index]->processState(message.playerState);
 }
 
 void Server::processLogout(Socket *client, const MessageClient &message)

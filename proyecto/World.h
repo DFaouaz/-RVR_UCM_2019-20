@@ -28,6 +28,9 @@ public:
 
     virtual void to_bin();
     virtual int from_bin(char* data);
+
+    void setIndex(int index);
+    int getIndex() const;
 private:
     void checkCollisions();
 
@@ -36,6 +39,7 @@ private:
     std::vector<GameObject*> gameObjects;
 
     std::vector<GameObject*> removeObjects;
+    int worldIndex;
 };
 
 #endif

@@ -56,6 +56,7 @@ void Client::recieveMessage()
 
         if(message.type == MessageServer::LOGIN){
             playerState.index = message.index;
+            world->setIndex(message.index);
         }
 
         world->copy(message.world);

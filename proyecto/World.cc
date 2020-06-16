@@ -7,7 +7,17 @@
 
 World::World(sf::RenderWindow *window) : window(window), removeObjects()
 {
-    Obstacle* obstacle = new Obstacle(250, 130, 20, 20);
+    Obstacle *obstacle = nullptr;
+
+    obstacle = new Obstacle(250, 130, 100, 100);
+    addGameObject(obstacle);
+    obstacle = new Obstacle(420, 210, 24, 42);
+    addGameObject(obstacle);
+    obstacle = new Obstacle(325, 300, 35, 42);
+    addGameObject(obstacle);
+    obstacle = new Obstacle(25, 40, 50, 70);
+    addGameObject(obstacle);
+    obstacle = new Obstacle(500, 170, 100, 20);
     addGameObject(obstacle);
 }
 
@@ -99,14 +109,18 @@ void World::copy(const World &world)
         GameObject *gameObject = nullptr;
         if (gO->type == ObjectType::PLAYER)
         {
-            gameObject = new Player(-1);
+            Player* player = (Player*)gO;
+            gameObject = new Player(player->index);
+            Player* myPlayer = (Player*)gameObject;
+            myPlayer->kills = player->kills;
             gameObject->xPosition = gO->xPosition;
             gameObject->yPosition = gO->yPosition;
             addGameObject(gameObject);
         }
         else if (gO->type == ObjectType::BULLET)
         {
-            gameObject = new Bullet();
+            Bullet* bullet = (Bullet*)gO;
+            gameObject = new Bullet(bullet->index);
             gameObject->xPosition = gO->xPosition;
             gameObject->yPosition = gO->yPosition;
             addGameObject(gameObject);
@@ -155,8 +169,6 @@ int World::from_bin(char *data)
     size_t count = 0;
     memcpy(&count, pos, sizeof(size_t));
 
-    printf("%i\n", (int)count);
-
     pos += sizeof(size_t);
     while (count > 0)
     {
@@ -191,6 +203,16 @@ int World::from_bin(char *data)
     return 0;
 }
 
+void World::setIndex(int index)
+{
+    worldIndex = index;
+}
+
+int World::getIndex() const
+{
+    return worldIndex;
+}
+
 void World::checkCollisions()
 {
     for (GameObject *gO : gameObjects)
@@ -199,7 +221,7 @@ void World::checkCollisions()
         {
             if (gO == gO2)
                 continue;
-            if(gO->checkCollision(gO2))
+            if (gO->checkCollision(gO2))
             {
                 gO->onCollisionEnter(gO2);
             }

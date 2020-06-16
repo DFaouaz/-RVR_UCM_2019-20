@@ -8,7 +8,13 @@ Bullet::Bullet() : GameObject(BULLET)
     height = 5;
 }
 
-Bullet::Bullet(int index, float speed, float xDirection, float yDirection) : GameObject(BULLET), index(index), speed(speed), xDirection(xDirection), yDirection(yDirection)
+Bullet::Bullet(int index) : GameObject(BULLET), index(index)
+{
+    width = 5;
+    height = 5;
+}
+
+Bullet::Bullet(int index, float speed, float xDirection, float yDirection, Player* shooter) : GameObject(BULLET), index(index), speed(speed), xDirection(xDirection), yDirection(yDirection), shooter(shooter)
 {
     float magnitude = std::sqrt(xDirection * xDirection + yDirection * yDirection);
     this->xDirection /= magnitude;
@@ -25,7 +31,12 @@ Bullet::~Bullet()
 void Bullet::render(sf::RenderWindow *window)
 {
     sf::RectangleShape rect({width, height});
-    rect.setFillColor(sf::Color::Red);
+
+    if (world->getIndex() == index)
+        rect.setFillColor(sf::Color::Blue);
+    else
+        rect.setFillColor(sf::Color::Red);
+
     rect.setPosition(xPosition, yPosition);
     window->draw(rect);
 }
@@ -47,6 +58,7 @@ void Bullet::onCollisionEnter(GameObject *other)
         Player *player = (Player *)other;
         if (player->index == index)
             return;
+        shooter->kills++;
         world->laterRemoveGameObject(this);
     }
     if (other->type == ObjectType::OBSTACLE)
@@ -58,10 +70,28 @@ void Bullet::onCollisionEnter(GameObject *other)
 void Bullet::to_bin()
 {
     GameObject::to_bin();
+    int size = GameObject::size();
+    char buffer[size];
+    memcpy(buffer, GameObject::data(), size);
+
+    alloc_data(size + sizeof(index));
+
+    char *pos = _data;
+    memcpy(pos, buffer, size);
+
+    pos += size;
+    memcpy(pos, &index, sizeof(index));
 }
 
 int Bullet::from_bin(char *data)
 {
     GameObject::from_bin(data);
+
+    char *pos = data;
+    pos += GameObject::size();
+    memcpy(&index, pos, sizeof(index));
+
+    _size += sizeof(index);
+
     return 0;
 }
