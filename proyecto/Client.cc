@@ -27,7 +27,7 @@ void Client::init()
 
 void Client::run()
 {
-    while (window->isOpen())
+    while (!terminated && window->isOpen())
     {
         if (!processEvents())
             break;
@@ -54,9 +54,23 @@ void Client::recieveMessage()
         MessageServer message;
         socket.recv(message);
 
-        if(message.type == MessageServer::LOGIN){
+        if (message.type == MessageServer::LOGIN)
+        {
+            if (message.index == -1)
+            {
+                printf("Partida llena\n");
+                terminated = true;
+                break;
+            }
             playerState.index = message.index;
             world->setIndex(message.index);
+        }
+
+        if (message.type == MessageServer::LOGOUT)
+        {
+            printf("Conexion cerrada\n");
+            terminated = true;
+            break;
         }
 
         world->copy(message.world);
@@ -66,20 +80,18 @@ void Client::recieveMessage()
 
 void Client::login()
 {
-    PlayerState playerState;
-
     MessageClient message(nick, playerState);
     message.type = MessageClient::LOGIN;
+    message.playerState = playerState;
 
     socket.send(message, socket);
 }
 
 void Client::logout()
 {
-    PlayerState playerState;
-
     MessageClient message(nick, playerState);
     message.type = MessageClient::LOGOUT;
+    message.playerState = playerState;
 
     socket.send(message, socket);
 }
@@ -95,7 +107,7 @@ bool Client::processEvents()
         processed = !playerState.handleEvent(event) || processed;
     }
 
-    if(processed)
+    if (processed)
     {
         MessageClient messageClient;
         messageClient.type = MessageClient::MESSAGE;

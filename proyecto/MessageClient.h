@@ -18,7 +18,8 @@ public:
     {
         LOGIN = 0,
         MESSAGE = 1,
-        LOGOUT = 2
+        LOGOUT = 2,
+        NONE = 3
     };
 
     MessageClient();
@@ -29,7 +30,7 @@ public:
 
     int from_bin(char *bobj);
 
-    uint8_t type;
+    MessageType type;
 
     std::string nick;
     PlayerState playerState;

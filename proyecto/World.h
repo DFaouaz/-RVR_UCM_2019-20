@@ -31,6 +31,10 @@ public:
 
     void setIndex(int index);
     int getIndex() const;
+
+    void reset();
+    void restart();
+
 private:
     void checkCollisions();
 
@@ -40,6 +44,8 @@ private:
 
     std::vector<GameObject*> removeObjects;
     int worldIndex;
+
+    bool hasToRestart;
 };
 
 #endif

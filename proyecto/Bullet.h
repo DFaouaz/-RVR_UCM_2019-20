@@ -22,6 +22,8 @@ public:
     virtual void to_bin();
     virtual int from_bin(char *data);
 
+    virtual void reset();
+
 public:
     int index;
     Player* shooter;

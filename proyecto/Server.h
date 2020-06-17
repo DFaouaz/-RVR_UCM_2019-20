@@ -28,6 +28,7 @@ public:
 
 private:
     void manageMessages();
+    void manageInput();
 
     void processLogin(Socket* client, const MessageClient& message);
     void processMessage(Socket* client, const MessageClient& message);
@@ -39,18 +40,21 @@ private:
     void removePlayer(int index);
 
     void sendWorld();
+    int getFreeSlot();
+
+    void createNetThread();
 
 private:
     // Atributos o propiedades
     Socket socket;
-    std::thread netThread;
+    std::vector<std::thread> netThreads;
+    std::thread inputThread;
     bool terminated;
 
     // Vector de GameObjects?
     std::vector<Socket*> clients;
 
     // Otros
-    sf::RenderWindow* window;
     std::mutex worldMutex;
     std::mutex clientMutex;
     World* world;

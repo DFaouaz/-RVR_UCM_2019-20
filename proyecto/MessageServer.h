@@ -25,7 +25,7 @@ public:
 
     int from_bin(char * data);
 
-    uint8_t type;
-    uint8_t index;
+    MessageType type;
+    int index;
     World world;
 };

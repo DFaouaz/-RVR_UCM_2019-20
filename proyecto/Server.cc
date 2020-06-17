@@ -4,6 +4,7 @@
 
 Server::Server(const char *host, const char *port) : socket(host, port), terminated(false)
 {
+    players = std::vector<Player *>(4, nullptr);
 }
 
 Server::~Server()
@@ -17,25 +18,24 @@ void Server::init()
     // Socket bind
     socket.bind();
 
-    // Init window (solo para probar logica, esto iria en Client)
-    window = new sf::RenderWindow(sf::VideoMode(600, 480, 16), "SHUBE");
-
     // Init world
-    world = new World(window);
+    world = new World(nullptr);
 
     // Net thread
-    netThread = std::thread(&Server::manageMessages, std::ref(*this));
+    createNetThread();
+
+    inputThread = std::thread(&Server::manageInput, std::ref(*this));
+    inputThread.detach();
 }
 
 void Server::run()
 {
     sf::Clock timer;
     float deltaTime = 0;
-    while (true)
+    while (!terminated)
     {
         // Procesar partida
         worldMutex.lock();
-        world->render();
         world->update(deltaTime);
         worldMutex.unlock();
 
@@ -49,8 +49,23 @@ void Server::run()
 void Server::close()
 {
     terminated = true;
-    netThread.join();
-    delete window;
+
+    MessageServer message;
+    message.type = MessageServer::LOGOUT;
+    for (int i = 0; i < clients.size(); i++)
+    {
+        socket.send(message, *clients[i]);
+    }
+
+    MessageClient cMessage;
+    cMessage.type = MessageClient::NONE;
+    for (int i = 0; i < netThreads.size(); i++)
+        socket.send(cMessage, socket);
+
+    for (int i = 0; i < netThreads.size(); i++)
+        netThreads[i].join();
+
+    delete world;
 }
 
 // Private methods
@@ -86,6 +101,15 @@ void Server::manageMessages()
     }
 }
 
+void Server::manageInput()
+{
+    std::string str = "";
+    while (str != "q")
+        std::cin >> str;
+
+    terminated = true;
+}
+
 void Server::processLogin(Socket *client, const MessageClient &message)
 {
     std::lock_guard<std::mutex> lock(clientMutex);
@@ -103,6 +127,17 @@ void Server::processLogin(Socket *client, const MessageClient &message)
     if (client == nullptr)
         return;
 
+    // Si hay hueco en la partida
+    int index = getFreeSlot();
+    if (index == -1)
+    {
+        MessageServer messageServer;
+        messageServer.type = MessageServer::LOGIN;
+        messageServer.index = -1;
+        socket.send(messageServer, *client);
+        return;
+    };
+
     // Si no, meterlo en un vector
     clients.push_back(client);
     std::cout << "CLIENT LOGGED: " << *client << "\n";
@@ -110,13 +145,13 @@ void Server::processLogin(Socket *client, const MessageClient &message)
     //ECHO
     MessageServer messageServer;
     messageServer.type = MessageServer::LOGIN;
-    messageServer.index = players.size();
+    messageServer.index = index;
     socket.send(messageServer, *client);
 
-    addPlayer(players.size());
+    addPlayer(index);
 
     // Crear otro hilo
-    // TODO
+    //createNetThread();
 }
 
 void Server::processMessage(Socket *client, const MessageClient &message)
@@ -127,11 +162,8 @@ void Server::processMessage(Socket *client, const MessageClient &message)
     if (index < 0)
         return;
 
-    // Si es asi, modifica la info del cliente
-    /*if (message.playerState.index < players.size())
-        players[message.playerState.index];*/
-
-    players[message.playerState.index]->processState(message.playerState);
+    if (players[message.playerState.index] != nullptr)
+        players[message.playerState.index]->processState(message.playerState);
 }
 
 void Server::processLogout(Socket *client, const MessageClient &message)
@@ -156,11 +188,8 @@ void Server::processLogout(Socket *client, const MessageClient &message)
     delete client;
     clients.erase(it);
 
-    //Eliminar playerState
-    //TODO
-
     //Remove player
-    removePlayer(index);
+    removePlayer(message.playerState.index);
 }
 
 int Server::clientExists(Socket *client)
@@ -181,7 +210,7 @@ void Server::addPlayer(int index)
     Player *player = new Player(index);
     world->addGameObject(player);
 
-    players.push_back(player);
+    players[index] = player;
 }
 
 void Server::removePlayer(int index)
@@ -190,7 +219,7 @@ void Server::removePlayer(int index)
     Player *player = players[index];
     world->removeGameObject(player);
 
-    players.erase(players.begin() + index);
+    players[index] = nullptr;
 }
 
 void Server::sendWorld()
@@ -204,5 +233,25 @@ void Server::sendWorld()
     {
         messageServer.index = i;
         socket.send(messageServer, *clients[i]);
+    }
+}
+
+int Server::getFreeSlot()
+{
+    int i = 0;
+    while (i < 4)
+    {
+        if (players[i] == nullptr)
+            return i;
+        i++;
+    }
+    return -1;
+}
+
+void Server::createNetThread()
+{
+    if (netThreads.size() < clients.size() + 1)
+    {
+        netThreads.push_back(std::thread(&Server::manageMessages, std::ref(*this)));
     }
 }

@@ -7,8 +7,8 @@ Player::Player(int index) : GameObject(PLAYER), index(index), xDirection(0), yDi
     kills = 0;
     width = 20;
     height = 20;
-    xPosition = (index + 1) * 100;
-    yPosition = (index + 1) * 100;
+    hasToRespawn = false;
+    respawn();
 }
 
 Player::~Player()
@@ -32,7 +32,7 @@ void Player::render(sf::RenderWindow *window)
         sf::Text killCounter(std::to_string(kills), font, 20);
         killCounter.setOrigin(0.5f, 0.5f);
         killCounter.setFillColor(sf::Color::White);
-        killCounter.setPosition(xPosition + width / 4.0f, yPosition - height / 6.0f);
+        killCounter.setPosition(xPosition + width / 4.0f, yPosition - height / 10.0f);
         killCounter.setOutlineColor(sf::Color::Black);
         killCounter.setOutlineThickness(1.0f);
         killCounter.setStyle(sf::Text::Bold);
@@ -42,6 +42,12 @@ void Player::render(sf::RenderWindow *window)
 
 void Player::update(float deltaTime)
 {
+    if(hasToRespawn)
+    {
+        hasToRespawn = false;
+        respawn();
+    }
+
     float speed = 200;
     xPosition += xDirection * speed * deltaTime;
     yPosition += yDirection * speed * deltaTime;
@@ -66,6 +72,9 @@ void Player::update(float deltaTime)
             timer = 1.0f;
         }
     }
+
+    if(kills >= 30)
+        world->restart();
 }
 
 void Player::onCollisionEnter(GameObject *other)
@@ -75,6 +84,7 @@ void Player::onCollisionEnter(GameObject *other)
         Bullet *bullet = (Bullet *)other;
         if (bullet->index == index)
             return;
+        hasToRespawn = true;
     }
 }
 
@@ -87,6 +97,14 @@ void Player::shoot()
     bullet->setPosition(xPosition, yPosition);
 
     world->addGameObject(bullet);
+}
+
+void Player::respawn()
+{
+    float x = random(0.0f, float(SCREEN_WIDTH) - width);
+    float y = random(0.0f, float(SCREEN_HEIGHT) - height);
+
+    setPosition(x, y);
 }
 
 void Player::to_bin()
@@ -165,4 +183,15 @@ void Player::processState(const PlayerState &state)
     yAim = state.yAim;
 
     printf("XDir: %f | YDir: %f | Shooting: %i | XAim: %f | YAim: %f\n", xDirection, yDirection, (int)shooting, xAim, yAim);
+}
+
+void Player::reset()
+{
+    respawn();
+    kills = 0;
+}
+
+float Player::random(float min, float max)
+{
+    return (min + 1) + (((float)rand()) / (float)RAND_MAX) * (max - (min + 1));
 }

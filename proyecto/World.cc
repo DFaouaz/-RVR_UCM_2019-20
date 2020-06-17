@@ -5,7 +5,7 @@
 #include "Bullet.h"
 #include "Obstacle.h"
 
-World::World(sf::RenderWindow *window) : window(window), removeObjects()
+World::World(sf::RenderWindow *window) : window(window), removeObjects(), hasToRestart(false)
 {
     Obstacle *obstacle = nullptr;
 
@@ -43,12 +43,20 @@ void World::render()
 
 void World::update(float deltaTime)
 {
+
     checkCollisions();
 
     auto gameObjects = this->gameObjects;
 
     for (GameObject *gameObject : gameObjects)
         gameObject->update(deltaTime);
+
+
+    if (hasToRestart)
+    {
+        hasToRestart = false;
+        reset();
+    }
 
     //Remove
     for (GameObject *gameObject : removeObjects)
@@ -211,6 +219,19 @@ void World::setIndex(int index)
 int World::getIndex() const
 {
     return worldIndex;
+}
+
+void World::reset()
+{
+    for(GameObject* gameObject : gameObjects)
+    {
+        gameObject->reset();
+    }
+}
+
+void World::restart()
+{
+    hasToRestart = true;
 }
 
 void World::checkCollisions()

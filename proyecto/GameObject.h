@@ -39,6 +39,7 @@ public:
     void getSize(float& x, float& y);
 
     bool checkCollision(GameObject* gameObject);
+    virtual void reset() {};
 
 public:
     ObjectType type;

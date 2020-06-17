@@ -95,3 +95,8 @@ int Bullet::from_bin(char *data)
 
     return 0;
 }
+
+void Bullet::reset()
+{
+    world->laterRemoveGameObject(this);
+}

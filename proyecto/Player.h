@@ -17,22 +17,27 @@ public:
 
     virtual void render(sf::RenderWindow *window);
     virtual void update(float deltaTime);
-    virtual void handleEvent(sf::Event &event) {};
-    virtual void onCollisionEnter(GameObject* other);
+    virtual void handleEvent(sf::Event &event){};
+    virtual void onCollisionEnter(GameObject *other);
 
     virtual void to_bin();
     virtual int from_bin(char *data);
 
-    void processState(const PlayerState& state);
+    void processState(const PlayerState &state);
+
+    virtual void reset();
 
 private:
     void shoot();
+    void respawn();
+    float random(float min, float max);
 
 public:
     int index;
     int kills;
 
 private:
+    bool hasToRespawn;
     float xDirection;
     float yDirection;
     bool shooting;
