@@ -1,6 +1,7 @@
 #include "Server.h"
 #include "MessageServer.h"
 #include "MessageClient.h"
+#include <chrono>
 
 Server::Server(const char *host, const char *port) : socket(host, port), terminated(false)
 {
@@ -41,6 +42,9 @@ void Server::run()
 
         sendWorld();
 
+        if (1000.0 / 60.0 - timer.getElapsedTime().asMilliseconds() > 0)
+            std::this_thread::sleep_for(std::chrono::milliseconds(int64_t(1000.0 / 60.0 - timer.getElapsedTime().asMilliseconds())));
+
         deltaTime = timer.getElapsedTime().asSeconds();
         timer.restart();
     }
@@ -64,6 +68,10 @@ void Server::close()
 
     for (int i = 0; i < netThreads.size(); i++)
         netThreads[i].join();
+
+    for (auto client : clients)
+        delete client;
+    clients.clear();
 
     delete world;
 }
@@ -151,7 +159,7 @@ void Server::processLogin(Socket *client, const MessageClient &message)
     addPlayer(index);
 
     // Crear otro hilo
-    //createNetThread();
+    createNetThread();
 }
 
 void Server::processMessage(Socket *client, const MessageClient &message)
